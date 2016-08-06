@@ -116,7 +116,10 @@ else
 	ifconfig_syntax_ptpv6=""
 fi
 
-if [ -r /etc/openwrt_release ] && [ -n "$OPENWRT_INTERFACE" ]; then
+if [ -d "$HOOKS_DIR/modify-resolvconf.d" ]; then
+	MODIFYRESOLVCONF=modify_resolvconf_custom
+	RESTORERESOLVCONF=restore_resolvconf_custom
+elif [ -r /etc/openwrt_release ] && [ -n "$OPENWRT_INTERFACE" ]; then
         . /etc/functions.sh
 	include /lib/network
 	MODIFYRESOLVCONF=modify_resolvconf_openwrt
@@ -363,6 +366,16 @@ else # use route command
 fi
 
 # =========== resolv.conf handling ====================================
+
+# =========== resolv.conf handling via custom hooks ===================
+modify_resolvconf_custom() {
+	run_hooks modify-resolvconf
+}
+
+restore_resolvconf_custom() {
+	run_hooks restore-resolvconf
+}
+
 
 # =========== resolv.conf handling for any OS =========================
 
