@@ -90,6 +90,10 @@ fi
 
 # stupid SunOS: no blubber in /usr/local/bin ... (on stdout)
 IPROUTE="`which ip 2> /dev/null | grep '^/'`"
+# If you want to use a different table, then override this in the connect,
+# reconnent, and disconnect hooks. Note--this only works on systems with
+# the 'ip' command ($IPROUTE above).
+IPROUTE_TABLE=main
 
 if ifconfig --help 2>&1 | grep BusyBox > /dev/null; then
 	ifconfig_syntax_inet=""
@@ -225,18 +229,18 @@ if [ -n "$IPROUTE" ]; then
 	}
 
 	set_vpngateway_route() {
-		$IPROUTE route add `$IPROUTE route get "$VPNGATEWAY" | fix_ip_get_output`
+		$IPROUTE route add `$IPROUTE route get "$VPNGATEWAY" | fix_ip_get_output` table "$IPROUTE_TABLE"
 		$IPROUTE route flush cache
 	}
 
 	del_vpngateway_route() {
-		$IPROUTE route $route_syntax_del "$VPNGATEWAY"
+		$IPROUTE route $route_syntax_del "$VPNGATEWAY" table "$IPROUTE_TABLE"
 		$IPROUTE route flush cache
 	}
 
 	set_default_route() {
 		$IPROUTE route | grep '^default' | fix_ip_get_output > "$DEFAULT_ROUTE_FILE"
-		$IPROUTE route replace default dev "$TUNDEV"
+		$IPROUTE route replace default dev "$TUNDEV" table "$IPROUTE_TABLE"
 		$IPROUTE route flush cache
 	}
 
@@ -244,13 +248,13 @@ if [ -n "$IPROUTE" ]; then
 		NETWORK="$1"
 		NETMASK="$2"
 		NETMASKLEN="$3"
-		$IPROUTE route replace "$NETWORK/$NETMASKLEN" dev "$TUNDEV"
+		$IPROUTE route replace "$NETWORK/$NETMASKLEN" dev "$TUNDEV" table "$IPROUTE_TABLE"
 		$IPROUTE route flush cache
 	}
 
 	reset_default_route() {
 		if [ -s "$DEFAULT_ROUTE_FILE" ]; then
-			$IPROUTE route replace `cat "$DEFAULT_ROUTE_FILE"`
+			$IPROUTE route replace `cat "$DEFAULT_ROUTE_FILE"` table "$IPROUTE_TABLE"
 			$IPROUTE route flush cache
 			rm -f -- "$DEFAULT_ROUTE_FILE"
 		fi
@@ -260,32 +264,32 @@ if [ -n "$IPROUTE" ]; then
 		NETWORK="$1"
 		NETMASK="$2"
 		NETMASKLEN="$3"
-		$IPROUTE route $route_syntax_del "$NETWORK/$NETMASKLEN" dev "$TUNDEV"
+		$IPROUTE route $route_syntax_del "$NETWORK/$NETMASKLEN" dev "$TUNDEV" table "$IPROUTE_TABLE"
 		$IPROUTE route flush cache
 	}
 
 	set_ipv6_default_route() {
 		# We don't save/restore IPv6 default route; just add a higher-priority one.
-		$IPROUTE -6 route add default dev "$TUNDEV" metric 1
+		$IPROUTE -6 route add default dev "$TUNDEV" metric 1 table "$IPROUTE_TABLE"
 		$IPROUTE -6 route flush cache
 	}
 
 	set_ipv6_network_route() {
 		NETWORK="$1"
 		NETMASKLEN="$2"
-		$IPROUTE -6 route replace "$NETWORK/$NETMASKLEN" dev "$TUNDEV"
+		$IPROUTE -6 route replace "$NETWORK/$NETMASKLEN" dev "$TUNDEV" table "$IPROUTE_TABLE"
 		$IPROUTE route flush cache
 	}
 
 	reset_ipv6_default_route() {
-		$IPROUTE -6 route del default dev "$TUNDEV"
+		$IPROUTE -6 route del default dev "$TUNDEV" table "$IPROUTE_TABLE"
 		$IPROUTE route flush cache
 	}
 
 	del_ipv6_network_route() {
 		NETWORK="$1"
 		NETMASKLEN="$2"
-		$IPROUTE -6 route del "$NETWORK/$NETMASKLEN" dev "$TUNDEV"
+		$IPROUTE -6 route del "$NETWORK/$NETMASKLEN" dev "$TUNDEV" table "$IPROUTE_TABLE"
 		$IPROUTE -6 route flush cache
 	}
 else # use route command
