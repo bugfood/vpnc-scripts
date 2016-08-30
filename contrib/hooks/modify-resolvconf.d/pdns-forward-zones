@@ -1,0 +1,20 @@
+# This hook sets up pdns-recursor to forward specific zones to the VPNs name
+# server(s). The script uses $CISCO_DEF_DOMAIN; other zones can be added
+# manually to /etc/powerdns/forward-zones.in.
+#
+# The pdns-recursor configuration needs the following line:
+# forward-zones-file=/etc/powerdns/forward-zones
+
+(
+    # put all of this within a subshell to avoid altering the calling
+    # environment
+    file=/etc/powerdns/forward-zones
+    forward="$(echo "$INTERNAL_IP4_DNS" | sed 's/ +/, /g')"
+    (
+        [ -f "$file.in" ] && cat "$file.in"
+        for domain in $CISCO_DEF_DOMAIN ; do
+            echo "$domain=$forward"
+        done
+    ) > "$file.tmp" || exit 1
+    mv "$file.tmp" "$file" || exit 2
+)
