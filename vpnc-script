@@ -128,7 +128,9 @@ elif [ -r /etc/openwrt_release ] && [ -n "$OPENWRT_INTERFACE" ]; then
 	include /lib/network
 	MODIFYRESOLVCONF=modify_resolvconf_openwrt
 	RESTORERESOLVCONF=restore_resolvconf_openwrt
-elif [ -x /usr/bin/busctl ]; then  # For systemd-resolved (version 229 and above)
+# in order to check for using systemd-resolved, we need to check if it is
+# available, enabled in nsswitch.conf, and higher priority than dns
+elif [ -x /usr/bin/busctl ] && grep -q '^hosts:.*resolve' /etc/nsswitch.conf && grep '^hosts:' /etc/nsswitch.conf | grep -qv 'dns.*resolve' ; then  # For systemd-resolved (version 229 and above)
 	MODIFYRESOLVCONF=modify_resolved_manager
 	RESTORERESOLVCONF=restore_resolved_manager
 elif [ -x /sbin/resolvconf ]; then # Optional tool on Debian, Ubuntu, Gentoo and FreeBSD
