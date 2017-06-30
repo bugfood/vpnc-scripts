@@ -389,7 +389,11 @@ modify_resolvconf_generic() {
 # and will be overwritten by vpnc
 # as long as the above mark is intact"
 
-	DOMAINS="$CISCO_DEF_DOMAIN"
+	if [ -n "$CISCO_SPLIT_DNS" ] ; then
+		DOMAINS=$(echo "$CISCO_SPLIT_DNS" | sed 's/,/ /g')
+	else
+		DOMAINS="$CISCO_DEF_DOMAIN"
+	fi
 
 	exec 6< "$RESOLV_CONF_BACKUP"
 	while read LINE <&6 ; do
@@ -639,8 +643,14 @@ modify_resolved_manager() {
 	local if_index
 	if_index=$(get_if_index $TUNDEV)
 	busctl_set_nameservers $if_index $INTERNAL_IP4_DNS
-	if [ -n "$CISCO_DEF_DOMAIN" ]; then
-		busctl_set_search $if_index $CISCO_DEF_DOMAIN
+	if [ -n "$CISCO_SPLIT_DNS" ] ; then
+		DOMAINS=$(echo "$CISCO_SPLIT_DNS" | sed 's/,/ /g')
+	else
+		DOMAINS="$CISCO_DEF_DOMAIN"
+	fi
+
+	if [ -n "$DOMAINS" ]; then
+		busctl_set_search $if_index $DOMAINS
 	fi
 }
 
